@@ -4,6 +4,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write  # Required for creating releases and uploading assets
+
 jobs:
   build-darwin:
     uses: ./.github/workflows/build-darwin.yml
