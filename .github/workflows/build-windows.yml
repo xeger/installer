@@ -16,34 +16,9 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Build for windows/amd64
-        run: |
-          $env:GOOS = "windows"
-          $env:GOARCH = "amd64"
-          go build -o dist/windows-amd64/ck.exe ./cmd/ck
-
-      - name: Build for windows/arm64
-        run: |
-          $env:GOOS = "windows"
-          $env:GOARCH = "arm64"
-          go build -o dist/windows-arm64/ck.exe ./cmd/ck
-
       - name: Install WiX
         run: dotnet tool install --global wix
 
-      - name: Prepare WiX build directory
+      - name: Build Windows MSI
         run: |
-          New-Item -ItemType Directory -Force -Path "dist"
-
-      - name: Build MSI for x64
-        run: |
-          wix build installer.wxs -d Platform=x64 -o dist/CrossnoKaye-CLI-x64.msi
-
-      - name: Build MSI for ARM64
-        run: |
-          wix build installer.wxs -d Platform=arm64 -o dist/CrossnoKaye-CLI-arm64.msi
-
-      - name: Verify MSI files created
-        run: |
-          Get-ChildItem dist/*.msi
-          Write-Host "MSI files created successfully"
+          .\scripts\build-windows.ps1 -Version "$env:GITHUB_REF_NAME"
