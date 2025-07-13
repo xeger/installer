@@ -82,13 +82,17 @@ func PrintUsage(programName string) {
 
 	fmt.Printf("CrossnoKaye meta-CLI and version manager\n\n")
 
+	fmt.Printf("Built-in subcommands:\n")
+	fmt.Printf("  install   Install a subcommand from GitHub releases\n")
+
 	if len(commands) > 0 {
-		fmt.Printf("Available subcommands:\n")
+		fmt.Printf("\nInstalled subcommands:\n")
 		for _, cmd := range commands {
 			fmt.Printf("  %s\n", cmd)
 		}
 	} else {
-		fmt.Printf("No subcommands found. Install subcommands to $XDG_STATE_HOME/crossnokaye/cli/cmd/\n")
+		fmt.Printf("\nNo installed subcommands found.\n")
+		fmt.Printf("Use '%s install <command>' to install subcommands from GitHub.\n", programName)
 	}
 
 	fmt.Printf("\nOptions:\n")

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/crossnokaye/cli/internal/commands"
 	"github.com/crossnokaye/cli/internal/launcher"
 )
 
@@ -18,6 +19,14 @@ func main() {
 
 	if subcommand == "--help" || subcommand == "help" {
 		launcher.PrintUsage(os.Args[0])
+		return
+	}
+
+	if subcommand == "install" {
+		if err := commands.Install(args); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
 		return
 	}
 
