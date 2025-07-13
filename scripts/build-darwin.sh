@@ -9,7 +9,6 @@ echo "Building CrossnoKaye CLI for Darwin (version: $VERSION)"
 # Clean and create build directories
 rm -rf dist pkg-build
 mkdir -p dist
-mkdir -p pkg-build/usr/local/bin
 mkdir -p pkg-build/scripts
 mkdir -p pkg-build/tmp/ck-install
 
@@ -40,8 +39,8 @@ pkgbuild \
   --scripts pkg-build/scripts \
   --identifier com.crossnokaye.ck \
   --version "$VERSION" \
-  --install-location / \
-  CrossnoKaye-CLI.pkg
+  --install-location /tmp \
+  dist/CrossnoKaye-CLI.pkg
 
 echo "PKG build complete!"
-ls -la CrossnoKaye-CLI.pkg
+ls -la dist/CrossnoKaye-CLI.pkg
