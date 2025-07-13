@@ -7,6 +7,7 @@ import (
 
 	"github.com/crossnokaye/cli/internal/archive"
 	"github.com/crossnokaye/cli/internal/github"
+	"github.com/crossnokaye/cli/internal/version"
 )
 
 func Install(args []string) error {
@@ -81,7 +82,11 @@ func Install(args []string) error {
 		return fmt.Errorf("failed to make binary executable: %w", err)
 	}
 
-	fmt.Printf("Successfully installed %s\n", commandName)
+	if err := version.WriteReleaseInfo(cmdDir, commandName, release.TagName, repo); err != nil {
+		return fmt.Errorf("failed to write version info: %w", err)
+	}
+
+	fmt.Printf("Successfully installed %s %s\n", commandName, release.TagName)
 	return nil
 }
 

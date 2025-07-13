@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+
+	"github.com/crossnokaye/cli/internal/version"
 )
 
 func Execute(subcommand string, args []string) error {
@@ -72,10 +74,12 @@ func GetAvailableCommands() ([]string, error) {
 func PrintUsage(programName string) {
 	programName = filepath.Base(programName)
 
-	commands, err := GetAvailableCommands()
+	stateHome := getStateHome()
+	commands, versions, err := version.GetSortedCommandsWithVersions(stateHome)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error listing commands: %v\n", err)
 		commands = []string{}
+		versions = make(map[string]string)
 	}
 
 	fmt.Printf("Usage: %s <subcommand> [args...]\n\n", programName)
@@ -84,11 +88,16 @@ func PrintUsage(programName string) {
 
 	fmt.Printf("Built-in subcommands:\n")
 	fmt.Printf("  install   Install a subcommand from GitHub releases\n")
+	fmt.Printf("  upgrade   Upgrade ck itself or a subcommand\n")
 
 	if len(commands) > 0 {
 		fmt.Printf("\nInstalled subcommands:\n")
 		for _, cmd := range commands {
-			fmt.Printf("  %s\n", cmd)
+			if ver, exists := versions[cmd]; exists {
+				fmt.Printf("  %-16s %s\n", cmd, ver)
+			} else {
+				fmt.Printf("  %-16s %s\n", cmd, "unknown")
+			}
 		}
 	} else {
 		fmt.Printf("\nNo installed subcommands found.\n")

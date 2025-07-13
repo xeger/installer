@@ -30,6 +30,14 @@ func main() {
 		return
 	}
 
+	if subcommand == "upgrade" {
+		if err := commands.Upgrade(args); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	if err := launcher.Execute(subcommand, args); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
