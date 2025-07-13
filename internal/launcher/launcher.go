@@ -1,0 +1,97 @@
+package launcher
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"sort"
+)
+
+func Execute(subcommand string, args []string) error {
+	binaryPath, err := findBinary(subcommand)
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command(binaryPath, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+func findBinary(subcommand string) (string, error) {
+	stateHome := getStateHome()
+	binaryPath := filepath.Join(stateHome, "crossnokaye", "cli", "cmd", subcommand, subcommand)
+
+	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
+		return "", fmt.Errorf("subcommand '%s' not found at %s", subcommand, binaryPath)
+	}
+
+	return binaryPath, nil
+}
+
+func getStateHome() string {
+	stateHome := os.Getenv("XDG_STATE_HOME")
+	if stateHome == "" {
+		homeDir, _ := os.UserHomeDir()
+		stateHome = filepath.Join(homeDir, ".local", "state")
+	}
+	return stateHome
+}
+
+func GetAvailableCommands() ([]string, error) {
+	stateHome := getStateHome()
+	cmdDir := filepath.Join(stateHome, "crossnokaye", "cli", "cmd")
+
+	if _, err := os.Stat(cmdDir); os.IsNotExist(err) {
+		return []string{}, nil
+	}
+
+	entries, err := os.ReadDir(cmdDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read commands directory: %w", err)
+	}
+
+	var commands []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			binaryPath := filepath.Join(cmdDir, entry.Name(), entry.Name())
+			if _, err := os.Stat(binaryPath); err == nil {
+				commands = append(commands, entry.Name())
+			}
+		}
+	}
+
+	sort.Strings(commands)
+	return commands, nil
+}
+
+func PrintUsage(programName string) {
+	programName = filepath.Base(programName)
+
+	commands, err := GetAvailableCommands()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error listing commands: %v\n", err)
+		commands = []string{}
+	}
+
+	fmt.Printf("Usage: %s <subcommand> [args...]\n\n", programName)
+
+	fmt.Printf("CrossnoKaye meta-CLI and version manager\n\n")
+
+	if len(commands) > 0 {
+		fmt.Printf("Available subcommands:\n")
+		for _, cmd := range commands {
+			fmt.Printf("  %s\n", cmd)
+		}
+	} else {
+		fmt.Printf("No subcommands found. Install subcommands to $XDG_STATE_HOME/crossnokaye/cli/cmd/\n")
+	}
+
+	fmt.Printf("\nOptions:\n")
+	fmt.Printf("  --help    Show this help message\n")
+	fmt.Printf("  help      Show this help message\n")
+}
