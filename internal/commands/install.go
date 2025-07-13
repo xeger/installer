@@ -26,26 +26,22 @@ func Install(args []string) error {
 	var err error
 
 	for _, pattern := range repoPatterns {
-		fmt.Printf("Trying repository %s...\n", pattern)
 		release, err = github.GetLatestRelease(pattern)
 		if err == nil {
 			repo = pattern
 			break
 		}
-		fmt.Printf("Repository %s not found, trying next pattern...\n", pattern)
 	}
 
 	if release == nil {
 		return fmt.Errorf("failed to find repository for %s. Tried: %v", commandName, repoPatterns)
 	}
 
-	fmt.Printf("Installing %s from %s...\n", commandName, repo)
-
-	fmt.Printf("Found release %s\n", release.TagName)
+	fmt.Printf("Installing %s from %s@%s...\n", commandName, repo, release.TagName)
 
 	asset, err := github.FindAssetForPlatform(release, commandName)
 	if err != nil {
-		return fmt.Errorf("failed to find compatible asset: %w", err)
+		return fmt.Errorf("no compatible release asset: %w", err)
 	}
 
 	fmt.Printf("Downloading %s...\n", asset.Name)
