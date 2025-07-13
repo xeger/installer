@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="CrossnoKaye CLI" 
+           Manufacturer="CrossnoKaye" 
+           Version="1.0.0" 
+           UpgradeCode="12345678-1234-1234-1234-123456789012">
+    
+    <MediaTemplate EmbedCab="yes" />
+    
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="!(bind.Property.ProductName)" />
+    </StandardDirectory>
+    
+    <ComponentGroup Id="CKComponents">
+      <?if $(var.Platform) = "x64" ?>
+      <Component Id="CK_AMD64" 
+                 Guid="7d3f9b16-7c8b-4798-becf-a48d87152f08" 
+                 Directory="INSTALLFOLDER">
+        <File Source="dist/windows-amd64/ck.exe" />
+      </Component>
+      <?endif?>
+      
+      <?if $(var.Platform) = "arm64" ?>
+      <Component Id="CK_ARM64" 
+                 Guid="8e4f0c27-8d9c-5809-cfdf-b59e98263f19" 
+                 Directory="INSTALLFOLDER">
+        <File Source="dist/windows-arm64/ck.exe" />
+      </Component>
+      <?endif?>
+    </ComponentGroup>
+    
+    <Feature Id="MainFeature" Title="CrossnoKaye CLI" Level="1">
+      <ComponentGroupRef Id="CKComponents" />
+    </Feature>
+  </Package>
+</Wix>

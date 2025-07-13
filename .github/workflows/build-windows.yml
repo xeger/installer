@@ -8,8 +8,42 @@ jobs:
     runs-on: windows-latest
     
     steps:
-      - name: Placeholder step
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - name: Build for windows/amd64
         run: |
-          echo "Windows build workflow - placeholder for now"
-          echo "This will be implemented later with WiX MSI creation"
-          exit 0
+          $env:GOOS = "windows"
+          $env:GOARCH = "amd64"
+          go build -o dist/windows-amd64/ck.exe ./cmd/ck
+      
+      - name: Build for windows/arm64
+        run: |
+          $env:GOOS = "windows"
+          $env:GOARCH = "arm64"
+          go build -o dist/windows-arm64/ck.exe ./cmd/ck
+      
+      - name: Install WiX
+        run: dotnet tool install --global wix
+      
+      - name: Prepare WiX build directory
+        run: |
+          New-Item -ItemType Directory -Force -Path "wix-build"
+      
+      - name: Build MSI for x64
+        run: |
+          wix build installer.wxs -d Platform=x64 -o wix-build/ck-windows-x64.msi
+      
+      - name: Build MSI for ARM64
+        run: |
+          wix build installer.wxs -d Platform=arm64 -o wix-build/ck-windows-arm64.msi
+      
+      - name: Verify MSI files created
+        run: |
+          Get-ChildItem wix-build/*.msi
+          Write-Host "MSI files created successfully"
