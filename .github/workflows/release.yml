@@ -1,0 +1,16 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-darwin:
+    uses: ./.github/workflows/build-darwin.yml
+    with:
+      release_tag: ${{ github.event.release.tag_name }}
+
+  build-windows:
+    uses: ./.github/workflows/build-windows.yml
+    with:
+      release_tag: ${{ github.event.release.tag_name }}

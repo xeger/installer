@@ -18,9 +18,11 @@ jobs:
         run: go vet ./...
 
   build-darwin:
+    # MacOS runners are expensive; don't waste cycles!
     if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
     uses: ./.github/workflows/build-darwin.yml
 
   build-windows:
+    # Windows runners are expensive; don't waste cycles!
     if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
     uses: ./.github/workflows/build-windows.yml
