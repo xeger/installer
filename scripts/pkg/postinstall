@@ -1,0 +1,22 @@
+#!/bin/bash
+
+ARCH=$(uname -m)
+case $ARCH in
+  x86_64)
+    BINARY_ARCH="amd64"
+    ;;
+  arm64)
+    BINARY_ARCH="arm64"
+    ;;
+  *)
+    echo "Unsupported architecture: $ARCH"
+    exit 1
+    ;;
+esac
+
+# Copy the appropriate binary
+cp "/tmp/ck-install/darwin-${BINARY_ARCH}/ck" /usr/local/bin/ck
+chmod +x /usr/local/bin/ck
+
+# Clean up
+rm -rf /tmp/ck-install
