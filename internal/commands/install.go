@@ -50,8 +50,8 @@ func Install(args []string) error {
 
 	fmt.Printf("Downloading %s...\n", asset.Name)
 
-	stateHome := getStateHome()
-	cmdDir := filepath.Join(stateHome, "crossnokaye", "cli", "cmd", commandName)
+	dataHome := getDataHome()
+	cmdDir := filepath.Join(dataHome, "crossnokaye", "cli", "cmd", commandName)
 	if err := os.MkdirAll(cmdDir, 0755); err != nil {
 		return fmt.Errorf("failed to create command directory: %w", err)
 	}
@@ -90,11 +90,11 @@ func Install(args []string) error {
 	return nil
 }
 
-func getStateHome() string {
-	stateHome := os.Getenv("XDG_STATE_HOME")
-	if stateHome == "" {
+func getDataHome() string {
+	dataHome := os.Getenv("XDG_DATA_HOME")
+	if dataHome == "" {
 		homeDir, _ := os.UserHomeDir()
-		stateHome = filepath.Join(homeDir, ".local", "state")
+		dataHome = filepath.Join(homeDir, ".local", "share")
 	}
-	return stateHome
+	return dataHome
 }

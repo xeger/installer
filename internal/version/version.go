@@ -65,8 +65,8 @@ func GetInstalledVersion(cmdDir, commandName string) (string, error) {
 	return "", fmt.Errorf("no version info found for %s", commandName)
 }
 
-func GetAllInstalledVersions(stateHome string) (map[string]string, error) {
-	cmdBaseDir := filepath.Join(stateHome, "crossnokaye", "cli", "cmd")
+func GetAllInstalledVersions(dataHome string) (map[string]string, error) {
+	cmdBaseDir := filepath.Join(dataHome, "crossnokaye", "cli", "cmd")
 	versions := make(map[string]string)
 
 	if _, err := os.Stat(cmdBaseDir); os.IsNotExist(err) {
@@ -100,8 +100,8 @@ func GetAllInstalledVersions(stateHome string) (map[string]string, error) {
 	return versions, nil
 }
 
-func GetSortedCommandsWithVersions(stateHome string) ([]string, map[string]string, error) {
-	cmdBaseDir := filepath.Join(stateHome, "crossnokaye", "cli", "cmd")
+func GetSortedCommandsWithVersions(dataHome string) ([]string, map[string]string, error) {
+	cmdBaseDir := filepath.Join(dataHome, "crossnokaye", "cli", "cmd")
 	versions := make(map[string]string)
 	var commands []string
 

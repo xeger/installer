@@ -18,10 +18,10 @@ This is a meta-CLI launcher and version manager written in Go that dynamically d
 - `internal/version/version.go` - Version tracking database using release.json files
 
 **Key Design Patterns:**
-- **Binary Discovery**: Looks for executables at `$XDG_STATE_HOME/crossnokaye/cli/cmd/{subcommand}/{subcommand}`
+- **Binary Discovery**: Looks for executables at `$XDG_DATA_HOME/crossnokaye/cli/cmd/{subcommand}/{subcommand}`
 - **Argument Forwarding**: Passes all arguments after the subcommand directly to the target binary
 - **Dynamic Help**: Scans the filesystem to generate help text with available subcommands and versions
-- **XDG Compliance**: Uses `XDG_STATE_HOME` with fallback to `~/.local/state`
+- **XDG Compliance**: Uses `XDG_DATA_HOME` with fallback to `~/.local/share`
 - **Version Tracking**: Maintains `release.json` database files alongside binaries
 - **Repository Patterns**: Tries multiple GitHub repository naming conventions (`crossnokaye/cli-{cmd}`, `crossnokaye/{cmd}`)
 - **Self-Upgrade**: Can upgrade its own binary in-place with safety testing
@@ -51,7 +51,7 @@ ALWAYS CHECK FOR CODE ISSUES AFTER GENERATING CODE.
 **install** - `ck install <command>`
 - Searches GitHub repositories: `crossnokaye/cli-{command}`, then `crossnokaye/{command}`
 - Downloads latest release asset matching platform: `{command}_{tag}_{GOOS}_{GOARCH}.tar.gz`
-- Extracts to `$XDG_STATE_HOME/crossnokaye/cli/cmd/{command}/`
+- Extracts to `$XDG_DATA_HOME/crossnokaye/cli/cmd/{command}/`
 - Writes version tracking info to `release.json`
 - Requires GitHub CLI (`gh`) to be installed
 
@@ -67,7 +67,7 @@ ALWAYS CHECK FOR CODE ISSUES AFTER GENERATING CODE.
 2. Creates an `exec.Command` with stdio forwarding
 3. Runs the target binary with provided arguments
 
-**version.GetSortedCommandsWithVersions(stateHome)** - Version-aware command scanner that:
+**version.GetSortedCommandsWithVersions(dataHome)** - Version-aware command scanner that:
 1. Reads the commands directory structure
 2. Validates that binaries exist and are executable
 3. Returns sorted list of commands with version info from `release.json`
@@ -91,7 +91,7 @@ ALWAYS CHECK FOR CODE ISSUES AFTER GENERATING CODE.
 
 The launcher expects subcommands to be installed as:
 ```
-$XDG_STATE_HOME/crossnokaye/cli/cmd/
+$XDG_DATA_HOME/crossnokaye/cli/cmd/
 ├── foo/
 │   ├── foo          # executable binary
 │   └── release.json # version tracking database

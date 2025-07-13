@@ -17,8 +17,8 @@ func Upgrade(args []string) error {
 	fmt.Printf("Checking for %s upgrades...\n", commandName)
 
 	// Check current version
-	stateHome := getStateHome()
-	cmdDir := filepath.Join(stateHome, "crossnokaye", "cli", "cmd", commandName)
+	dataHome := getDataHome()
+	cmdDir := filepath.Join(dataHome, "crossnokaye", "cli", "cmd", commandName)
 
 	currentVersion, err := version.GetInstalledVersion(cmdDir, commandName)
 	if err != nil {
