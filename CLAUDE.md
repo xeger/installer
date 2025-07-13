@@ -38,7 +38,7 @@ go run ./cmd/ck [subcommand] [args...]
 # Test built-in commands
 go run ./cmd/ck help
 go run ./cmd/ck install <command>
-go run ./cmd/ck upgrade [command]
+go run ./cmd/ck upgrade <command>
 
 # Check for code issues
 go vet ./...
@@ -55,11 +55,9 @@ ALWAYS CHECK FOR CODE ISSUES AFTER GENERATING CODE.
 - Writes version tracking info to `release.json`
 - Requires GitHub CLI (`gh`) to be installed
 
-**upgrade** - `ck upgrade [command]`
-- Without args: upgrades ck itself from `crossnokaye/cli`
-- With command: upgrades specified subcommand to latest release
+**upgrade** - `ck upgrade <command>`
+- Upgrades specified subcommand to latest release
 - Checks current version and skips if already up-to-date
-- Self-upgrade tests new binary before replacing current one
 - Updates version tracking info
 
 ## Key Functions
@@ -86,9 +84,8 @@ ALWAYS CHECK FOR CODE ISSUES AFTER GENERATING CODE.
 3. Returns structured release data
 
 **archive.ExtractTarGzStream(reader, opts)** - Streaming extractor that:
-1. Supports in-memory extraction for self-upgrades
-2. File filtering for targeted extraction
-3. Atomic binary replacement to prevent corruption
+1. File filtering for targeted extraction
+2. Atomic binary replacement to prevent corruption
 
 ## Directory Structure Convention
 

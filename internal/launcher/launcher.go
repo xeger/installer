@@ -88,7 +88,7 @@ func PrintUsage(programName string) {
 
 	fmt.Printf("Built-in subcommands:\n")
 	fmt.Printf("  install   Install a subcommand from GitHub releases\n")
-	fmt.Printf("  upgrade   Upgrade ck itself or a subcommand\n")
+	fmt.Printf("  upgrade   Upgrade a subcommand to the latest version\n")
 
 	if len(commands) > 0 {
 		fmt.Printf("\nInstalled subcommands:\n")
