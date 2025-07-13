@@ -1,3 +1,4 @@
+// Test comment to verify Claude hook functionality
 package main
 
 import (
