@@ -1,0 +1,86 @@
+name: Build Darwin
+
+on:
+  workflow_call:
+
+jobs:
+  build-darwin:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - name: Build for darwin/amd64
+        run: |
+          GOOS=darwin GOARCH=amd64 go build -o dist/darwin-amd64/ck ./cmd/ck
+      
+      - name: Build for darwin/arm64
+        run: |
+          GOOS=darwin GOARCH=arm64 go build -o dist/darwin-arm64/ck ./cmd/ck
+      
+      - name: Create multi-platform PKG structure
+        run: |
+          mkdir -p pkg-build/usr/local/bin
+          mkdir -p pkg-build/scripts
+          
+          # Create postinstall script that detects architecture
+          cat > pkg-build/scripts/postinstall << 'EOF'
+          #!/bin/bash
+          
+          ARCH=$(uname -m)
+          case $ARCH in
+            x86_64)
+              BINARY_ARCH="amd64"
+              ;;
+            arm64)
+              BINARY_ARCH="arm64"
+              ;;
+            *)
+              echo "Unsupported architecture: $ARCH"
+              exit 1
+              ;;
+          esac
+          
+          # Copy the appropriate binary
+          cp "/tmp/ck-install/darwin-${BINARY_ARCH}/ck" /usr/local/bin/ck
+          chmod +x /usr/local/bin/ck
+          
+          # Clean up
+          rm -rf /tmp/ck-install
+          EOF
+          
+          chmod +x pkg-build/scripts/postinstall
+          
+          # Create preinstall script to stage binaries
+          cat > pkg-build/scripts/preinstall << 'EOF'
+          #!/bin/bash
+          mkdir -p /tmp/ck-install
+          EOF
+          
+          chmod +x pkg-build/scripts/preinstall
+      
+      - name: Stage binaries for PKG
+        run: |
+          mkdir -p pkg-build/tmp/ck-install
+          cp -r dist/* pkg-build/tmp/ck-install/
+      
+      - name: Build PKG
+        run: |
+          pkgbuild \
+            --root pkg-build \
+            --scripts pkg-build/scripts \
+            --identifier com.crossnokaye.ck \
+            --version ${GITHUB_REF_NAME:-dev} \
+            --install-location / \
+            ck-darwin.pkg
+      
+      - name: Verify PKG created
+        run: |
+          ls -la ck-darwin.pkg
+          echo "PKG file created successfully"

@@ -1,0 +1,15 @@
+name: Build Windows
+
+on:
+  workflow_call:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Placeholder step
+        run: |
+          echo "Windows build workflow - placeholder for now"
+          echo "This will be implemented later with WiX MSI creation"
+          exit 0
