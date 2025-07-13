@@ -6,33 +6,33 @@ on:
 jobs:
   build-darwin:
     runs-on: macos-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-      
+
       - name: Build for darwin/amd64
         run: |
           GOOS=darwin GOARCH=amd64 go build -o dist/darwin-amd64/ck ./cmd/ck
-      
+
       - name: Build for darwin/arm64
         run: |
           GOOS=darwin GOARCH=arm64 go build -o dist/darwin-arm64/ck ./cmd/ck
-      
+
       - name: Create multi-platform PKG structure
         run: |
           mkdir -p pkg-build/usr/local/bin
           mkdir -p pkg-build/scripts
-          
+
           # Create postinstall script that detects architecture
           cat > pkg-build/scripts/postinstall << 'EOF'
           #!/bin/bash
-          
+
           ARCH=$(uname -m)
           case $ARCH in
             x86_64)
@@ -46,30 +46,30 @@ jobs:
               exit 1
               ;;
           esac
-          
+
           # Copy the appropriate binary
           cp "/tmp/ck-install/darwin-${BINARY_ARCH}/ck" /usr/local/bin/ck
           chmod +x /usr/local/bin/ck
-          
+
           # Clean up
           rm -rf /tmp/ck-install
           EOF
-          
+
           chmod +x pkg-build/scripts/postinstall
-          
+
           # Create preinstall script to stage binaries
           cat > pkg-build/scripts/preinstall << 'EOF'
           #!/bin/bash
           mkdir -p /tmp/ck-install
           EOF
-          
+
           chmod +x pkg-build/scripts/preinstall
-      
+
       - name: Stage binaries for PKG
         run: |
           mkdir -p pkg-build/tmp/ck-install
           cp -r dist/* pkg-build/tmp/ck-install/
-      
+
       - name: Build PKG
         run: |
           pkgbuild \
@@ -78,9 +78,9 @@ jobs:
             --identifier com.crossnokaye.ck \
             --version ${GITHUB_REF_NAME:-dev} \
             --install-location / \
-            ck-darwin.pkg
-      
+            CrossnoKaye-CLI.pkg
+
       - name: Verify PKG created
         run: |
-          ls -la ck-darwin.pkg
+          ls -la CrossnoKaye-CLI.pkg
           echo "PKG file created successfully"
