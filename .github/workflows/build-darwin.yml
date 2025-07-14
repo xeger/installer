@@ -12,8 +12,6 @@ on:
 jobs:
   build-darwin:
     runs-on: macos-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout code
@@ -28,9 +26,8 @@ jobs:
         run: |
           ./scripts/build-darwin.sh ${{ inputs.release_tag || github.ref_name || 'dev' }}
 
-      - name: Upload to release
-        if: ${{ inputs.release_tag != '' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release upload ${{ inputs.release_tag }} dist/*.pkg --clobber
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: darwin-pkg
+          path: 'dist/*.pkg'

@@ -12,8 +12,6 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout code
@@ -31,9 +29,8 @@ jobs:
         run: |
           .\scripts\build-windows.ps1 -Version "${{ inputs.release_tag || github.ref_name || 'dev' }}"
 
-      - name: Upload to release
-        if: ${{ inputs.release_tag != '' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release upload ${{ inputs.release_tag }} dist/*.msi --clobber
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi
+          path: 'dist/*.msi'
