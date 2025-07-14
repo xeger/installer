@@ -73,11 +73,8 @@ func upgradeOne(commandName string) error {
 		return Install([]string{commandName})
 	}
 
-	// Get latest version
-	repoPatterns := []string{
-		fmt.Sprintf("crossnokaye/cli-%s", commandName),
-		fmt.Sprintf("crossnokaye/%s", commandName),
-	}
+	// Find our target repository
+	repoPatterns := github.FindRepositories(commandName)
 
 	var release *github.Release
 

@@ -16,10 +16,7 @@ func Install(args []string) error {
 	}
 
 	commandName := args[0]
-	repoPatterns := []string{
-		fmt.Sprintf("crossnokaye/cli-%s", commandName),
-		fmt.Sprintf("crossnokaye/%s", commandName),
-	}
+	repoPatterns := github.FindRepositories(commandName)
 
 	var release *github.Release
 	var repo string

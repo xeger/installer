@@ -19,6 +19,15 @@ type Asset struct {
 	URL  string `json:"url"`
 }
 
+// FindRepositories returns all possible repository patterns for a command name
+func FindRepositories(commandName string) []string {
+	return []string{
+		fmt.Sprintf("crossnokaye/%s", commandName),
+		fmt.Sprintf("crossnokaye/cli-%s", commandName),
+		fmt.Sprintf("crossnokaye/%s-cli", commandName),
+	}
+}
+
 func IsGHCLIAvailable() error {
 	_, err := exec.LookPath("gh")
 	if err != nil {
