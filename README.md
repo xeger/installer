@@ -1,6 +1,8 @@
 # CrossnoKaye Command Line Interface
 
-This is a meta-CLI launcher and version manager written in Go that dynamically discovers and executes subcommands. The CLI acts as a lightweight launcher that finds binaries in a standardized directory structure, forwards arguments to them, and manages installation/upgrades via GitHub releases.
+This is the easiest and best-supported way to use CrossnoKaye products from your terminal. It automatically installs, updates, and runs tools with simple commands, so you don't have to worry about downloading or managing different versions yourself.
+
+Just install it (instructions below) and then, at your terminal, `ck foobar` to invoke the `foobar` tool. We'll download the tool for you, and if we can't find it, we'll give you helpful pointers on how to locate it.
 
 ## One-Click Install
 
