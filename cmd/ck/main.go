@@ -8,9 +8,13 @@ import (
 
 	"github.com/crossnokaye/cli/internal/commands"
 	"github.com/crossnokaye/cli/internal/launcher"
+	"github.com/crossnokaye/cli/internal/updatecheck"
 )
 
 func main() {
+	// Check for updates (runs max once per week)
+	updatecheck.CheckForUpdates()
+
 	if len(os.Args) < 2 {
 		launcher.PrintUsage(os.Args[0])
 		os.Exit(1)
