@@ -16,13 +16,13 @@ Write-Host "Building binaries..."
 Write-Host "Building for windows/amd64..."
 $env:GOOS = "windows"
 $env:GOARCH = "amd64"
-go build -o dist/windows-amd64/ck.exe ./cmd/ck
+go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$Version" -o dist/windows-amd64/ck.exe ./cmd/ck
 
 # Build for windows/arm64
 Write-Host "Building for windows/arm64..."
 $env:GOOS = "windows"
 $env:GOARCH = "arm64"
-go build -o dist/windows-arm64/ck.exe ./cmd/ck
+go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$Version" -o dist/windows-arm64/ck.exe ./cmd/ck
 
 Write-Host "Building MSI installers..."
 
