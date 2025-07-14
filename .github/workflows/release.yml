@@ -12,11 +12,13 @@ jobs:
     uses: ./.github/workflows/build-darwin.yml
     with:
       release_tag: ${{ github.event.release.tag_name }}
+      release_channel: ${{ github.repository }}
 
   build-windows:
     uses: ./.github/workflows/build-windows.yml
     with:
       release_tag: ${{ github.event.release.tag_name }}
+      release_channel: ${{ github.repository }}
 
   publish:
     needs: [build-darwin, build-windows]

@@ -8,6 +8,11 @@ on:
         required: false
         default: ''
         type: string
+      release_channel:
+        description: 'Repository for release channel'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   build-darwin:
@@ -24,7 +29,7 @@ jobs:
 
       - name: Build Darwin PKG
         run: |
-          ./scripts/build-darwin.sh ${{ inputs.release_tag || github.ref_name || 'dev' }}
+          ./scripts/build-darwin.sh "${{ inputs.release_tag || github.ref_name || 'dev' }}" "${{ inputs.release_channel }}"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

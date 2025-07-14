@@ -19,9 +19,6 @@ type Asset struct {
 	URL  string `json:"url"`
 }
 
-// CLIRepository is the GitHub repository for the CLI itself
-const CLIRepository = "xeger/ck"
-
 // FindRepositories returns all possible repository patterns for a command name
 func FindRepositories(commandName string) []string {
 	return []string{

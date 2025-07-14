@@ -3,8 +3,9 @@
 set -e
 
 VERSION=${1:-dev}
+REPOSITORY=${2:-}
 
-echo "Building CrossnoKaye CLI for Darwin (version: $VERSION)"
+echo "Building CrossnoKaye CLI for Darwin (version: $VERSION, repository: $REPOSITORY)"
 
 # Clean and create build directories
 rm -rf dist pkg-build
@@ -16,11 +17,11 @@ echo "Building binaries..."
 
 # Build for darwin/amd64
 echo "Building for darwin/amd64..."
-GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$VERSION" -o dist/darwin-amd64/ck ./cmd/ck
+GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$VERSION -X github.com/crossnokaye/cli/internal/version.ReleaseChannel=$REPOSITORY" -o dist/darwin-amd64/ck ./cmd/ck
 
 # Build for darwin/arm64
 echo "Building for darwin/arm64..."
-GOOS=darwin GOARCH=arm64 go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$VERSION" -o dist/darwin-arm64/ck ./cmd/ck
+GOOS=darwin GOARCH=arm64 go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$VERSION -X github.com/crossnokaye/cli/internal/version.ReleaseChannel=$REPOSITORY" -o dist/darwin-arm64/ck ./cmd/ck
 
 echo "Creating PKG installer scripts..."
 

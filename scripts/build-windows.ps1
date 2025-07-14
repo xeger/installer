@@ -1,10 +1,11 @@
 #!/usr/bin/env pwsh
 
 param(
-    [string]$Version = "dev"
+    [string]$Version = "dev",
+    [string]$Repository = ""
 )
 
-Write-Host "Building CrossnoKaye CLI for Windows (version: $Version)"
+Write-Host "Building CrossnoKaye CLI for Windows (version: $Version, repository: $Repository)"
 
 # Clean and create build directories
 Remove-Item -Path "dist" -Recurse -Force -ErrorAction SilentlyContinue
@@ -16,13 +17,13 @@ Write-Host "Building binaries..."
 Write-Host "Building for windows/amd64..."
 $env:GOOS = "windows"
 $env:GOARCH = "amd64"
-go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$Version" -o dist/windows-amd64/ck.exe ./cmd/ck
+go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$Version -X github.com/crossnokaye/cli/internal/version.ReleaseChannel=$Repository" -o dist/windows-amd64/ck.exe ./cmd/ck
 
 # Build for windows/arm64
 Write-Host "Building for windows/arm64..."
 $env:GOOS = "windows"
 $env:GOARCH = "arm64"
-go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$Version" -o dist/windows-arm64/ck.exe ./cmd/ck
+go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$Version -X github.com/crossnokaye/cli/internal/version.ReleaseChannel=$Repository" -o dist/windows-arm64/ck.exe ./cmd/ck
 
 Write-Host "Building MSI installers..."
 

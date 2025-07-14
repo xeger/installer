@@ -17,6 +17,11 @@ type UpdateState struct {
 	CheckedAt string `json:"checked_at"`
 }
 
+const (
+	// UpdateCheckInterval is the interval at which to check for updates
+	UpdateCheckInterval = 7 * 24 * time.Hour
+)
+
 // getStateDir returns the XDG_STATE_DIR or appropriate fallback
 func getStateDir() string {
 	stateDir := os.Getenv("XDG_STATE_HOME")
@@ -83,7 +88,7 @@ func shouldCheckForUpdate(state *UpdateState) bool {
 		return true // If we can't parse the time, assume we should check
 	}
 
-	return time.Since(lastCheck) > 7*24*time.Hour // 1 week
+	return time.Since(lastCheck) > UpdateCheckInterval
 }
 
 // compareVersions compares two version strings and returns true if newVersion is newer than currentVersion
@@ -129,8 +134,13 @@ func CheckForUpdates() {
 		return
 	}
 
+	// Skip update check if ReleaseChannel is empty
+	if version.ReleaseChannel == "" {
+		return
+	}
+
 	// Check for updates
-	release, err := github.GetLatestRelease(github.CLIRepository)
+	release, err := github.GetLatestRelease(version.ReleaseChannel)
 	if err != nil {
 		// Silently fail if we can't get release info
 		return
@@ -138,6 +148,6 @@ func CheckForUpdates() {
 
 	currentVersion := version.ReleaseTag
 	if compareVersions(currentVersion, release.TagName) {
-		fmt.Printf("\n🎉 Update to CLI %s at https://github.com/%s/releases/latest\n", release.TagName, github.CLIRepository)
+		fmt.Printf("\n🎉 Update to CLI %s at https://github.com/%s/releases/latest\n", release.TagName, version.ReleaseChannel)
 	}
 }
