@@ -31,7 +31,7 @@ func Install(args []string) error {
 	}
 
 	if release == nil {
-		return fmt.Errorf("failed to find repository for %s. Tried: %v", commandName, repoPatterns)
+		return fmt.Errorf(github.FormatRepositoryNotFoundError(commandName, repoPatterns))
 	}
 
 	fmt.Printf("Installing %s from %s@%s...\n", commandName, repo, release.TagName)

@@ -86,7 +86,7 @@ func upgradeOne(commandName string) error {
 	}
 
 	if release == nil {
-		return fmt.Errorf("failed to find repository for %s", commandName)
+		return fmt.Errorf(github.FormatRepositoryNotFoundError(commandName, repoPatterns))
 	}
 
 	if currentVersion == release.TagName {

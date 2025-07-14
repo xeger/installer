@@ -92,3 +92,59 @@ func DownloadAsset(asset *Asset, destPath string, repo string, tagName string) e
 
 	return nil
 }
+
+// GetCurrentGitHubUser returns the GitHub username of the currently logged-in user
+func GetCurrentGitHubUser() (string, error) {
+	if err := IsGHCLIAvailable(); err != nil {
+		return "", err
+	}
+
+	cmd := exec.Command("gh", "auth", "status", "--hostname", "github.com")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", nil // Not logged in or auth failed
+	}
+
+	// Parse the output to extract the username
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "Logged in to github.com account") {
+			parts := strings.Fields(line)
+			for i, part := range parts {
+				if part == "account" && i+1 < len(parts) {
+					// Remove any parentheses or other characters
+					username := strings.TrimSpace(parts[i+1])
+					username = strings.Trim(username, "()")
+					return username, nil
+				}
+			}
+		}
+	}
+
+	return "", nil // Couldn't parse username
+}
+
+// FormatRepositoryNotFoundError creates a user-friendly error message when no repository is found
+func FormatRepositoryNotFoundError(commandName string, repoPatterns []string) string {
+	var message strings.Builder
+
+	message.WriteString("No distribution channel found.\n")
+	message.WriteString("Tried the following repositories:\n")
+
+	for _, pattern := range repoPatterns {
+		message.WriteString(fmt.Sprintf("  • %s\n", pattern))
+	}
+
+	// Get current GitHub user
+	username, err := GetCurrentGitHubUser()
+	if err != nil {
+		message.WriteString("\nNote: GitHub CLI is not available. Please install it from https://cli.github.com/\n")
+	} else if username == "" {
+		message.WriteString("\nIf the command is located in a private repository, please log in with:\n")
+		message.WriteString("  gh auth login\n")
+	} else {
+		message.WriteString(fmt.Sprintf("\nIf the command is located in a private repository, make sure that you (%s) have access to it.\n", username))
+	}
+
+	return message.String()
+}
