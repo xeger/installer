@@ -7,19 +7,7 @@
 // exported variables are swappable, which tests use to isolate behavior.
 package platform
 
-import (
-	"github.com/xeger/installer/internal/platform/clikit"
-	"github.com/xeger/installer/internal/platform/clikit/term"
-)
-
-// Printer is the user-facing output the launcher needs.
-type Printer interface {
-	Info(args ...any)
-	Success(args ...any)
-	Warn(args ...any)
-	Error(args ...any)
-	ErrorDetail(err error, prefaceContext ...any)
-}
+import "github.com/xeger/installer/internal/platform/clikit"
 
 // version is stamped at build time:
 //
@@ -66,6 +54,6 @@ var (
 	// VersionInfo returns a one-line "<program> <version> (<commit>)" summary.
 	VersionInfo = clikit.VersionInfo
 
-	// UI receives all user-facing messages.
-	UI Printer = term.Default
+	// ColorEnabled reports whether output to a stream may use color.
+	ColorEnabled = clikit.ColorEnabled
 )

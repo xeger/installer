@@ -9,6 +9,7 @@ import (
 
 	"github.com/xeger/installer/internal/github"
 	"github.com/xeger/installer/internal/platform"
+	"github.com/xeger/installer/internal/ui"
 	"github.com/xeger/installer/internal/updates"
 )
 
@@ -47,6 +48,6 @@ func NotifySelfUpdate(ctx context.Context) {
 		}
 	}
 	if updates.Newer(current, rel.Tag) {
-		platform.UI.Info(platform.Name, rel.Tag, "is available (you have "+current+"): https://github.com/"+platform.SelfRepo+"/releases/latest")
+		ui.Default.Info(platform.Name, rel.Tag, "is available (you have "+current+"): https://github.com/"+platform.SelfRepo+"/releases/latest")
 	}
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/xeger/installer/internal/launcher"
 	"github.com/xeger/installer/internal/platform"
 	"github.com/xeger/installer/internal/store"
+	"github.com/xeger/installer/internal/ui"
 )
 
 func main() {
@@ -25,7 +26,7 @@ func main() {
 }
 
 func run(ctx context.Context, args []string, stdout io.Writer) int {
-	ui := platform.UI
+	out := ui.Default
 	if len(args) == 0 {
 		usage(os.Stderr)
 		return 2
@@ -42,14 +43,14 @@ func run(ctx context.Context, args []string, stdout io.Writer) int {
 
 	case "install":
 		if len(args) < 2 {
-			ui.Error("Usage:", platform.Name, "install <tool|owner/tool>...")
+			out.Error("Usage:", platform.Name, "install <tool|owner/tool>...")
 			return 2
 		}
 		commands.NotifySelfUpdate(ctx)
 		failed := false
 		for _, tool := range args[1:] {
 			if err := commands.Install(ctx, tool); err != nil {
-				ui.ErrorDetail(err, "Could not install", tool)
+				out.ErrorDetail(err, "Could not install", tool)
 				failed = true
 			}
 		}
@@ -58,25 +59,25 @@ func run(ctx context.Context, args []string, stdout io.Writer) int {
 	case "upgrade":
 		commands.NotifySelfUpdate(ctx)
 		if err := commands.Upgrade(ctx, args[1:]); err != nil {
-			ui.ErrorDetail(err, "Upgrade failed")
+			out.ErrorDetail(err, "Upgrade failed")
 			return 1
 		}
 		return 0
 
 	default:
 		if strings.HasPrefix(cmd, "-") {
-			ui.Error("Unknown option", cmd)
+			out.Error("Unknown option", cmd)
 			usage(os.Stderr)
 			return 2
 		}
 		commands.NotifySelfUpdate(ctx)
 		bin, err := commands.Ensure(ctx, cmd)
 		if err != nil {
-			ui.ErrorDetail(err, "Cannot run", cmd)
+			out.ErrorDetail(err, "Cannot run", cmd)
 			return 1
 		}
 		err = launcher.Exec(bin, args[1:])
-		ui.ErrorDetail(err, "Cannot run", cmd)
+		out.ErrorDetail(err, "Cannot run", cmd)
 		return 1
 	}
 }
