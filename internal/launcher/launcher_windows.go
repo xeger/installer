@@ -4,6 +4,7 @@
 package launcher
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -16,7 +17,9 @@ import (
 // replaced by it.
 // It returns only if the tool cannot be started.
 func Exec(binary string, args []string) error {
-	cmd := exec.Command(binary, args...) //nolint:gosec // running tools is the launcher's job
+	// The tool outlives any launcher context: like exec(2) on Unix, nothing
+	// cancels it, and Ctrl+C is the tool's to handle.
+	cmd := exec.CommandContext(context.Background(), binary, args...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 
 	// The console delivers Ctrl+C to the tool too; let it decide what to do.

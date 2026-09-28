@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Runs golangci-lint. Install it first with scripts/setup.
+# Set GOOS to lint another platform's build-tagged files.
+
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+verbose=()
+if [[ -n "${DEBUG:-}" ]]; then
+  verbose=(--verbose)
+fi
+
+if [[ $# -eq 0 ]]; then
+  set -- ./...
+fi
+
+golangci-lint run "${verbose[@]}" "$@"

@@ -188,7 +188,7 @@ func install(ctx context.Context, tool, repo string, rel *github.Release) error 
 	if err != nil {
 		return fmt.Errorf("create download directory: %w", err)
 	}
-	defer os.RemoveAll(tmp)
+	defer func() { _ = os.RemoveAll(tmp) }() // best effort; the OS cleans temp eventually
 
 	ui.Default.Info("Downloading", tool, rel.Tag, "from", repo)
 	if err := github.Download(ctx, repo, rel.Tag, asset, tmp); err != nil {
@@ -199,7 +199,7 @@ func install(ctx context.Context, tool, repo string, rel *github.Release) error 
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(dir, 0o755); err != nil { //nolint:gosec // tool binaries are not secret
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("create %s: %w", dir, err)
 	}
 	bin := filepath.Join(dir, store.ExeName(tool))

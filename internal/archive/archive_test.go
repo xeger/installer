@@ -11,7 +11,7 @@ import (
 func writeTarGz(t *testing.T, files map[string]string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "tool.tar.gz")
-	f, err := os.Create(path) //nolint:gosec // test
+	f, err := os.Create(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestExtractFile(t *testing.T) {
 	if err := ExtractFile(src, "foo", dest); err != nil {
 		t.Fatalf("ExtractFile() error = %v", err)
 	}
-	got, err := os.ReadFile(dest) //nolint:gosec // test
+	got, err := os.ReadFile(dest)
 	if err != nil {
 		t.Fatal(err)
 	}

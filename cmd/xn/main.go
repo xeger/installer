@@ -38,7 +38,7 @@ func run(ctx context.Context, args []string, stdout io.Writer) int {
 		return 0
 
 	case "version", "--version":
-		fmt.Fprintln(stdout, platform.VersionInfo())
+		_, _ = fmt.Fprintln(stdout, platform.VersionInfo()) // nowhere to report a failed write
 		return 0
 
 	case "install":
@@ -89,9 +89,14 @@ func exitCode(failed bool) int {
 	return 0
 }
 
+// usage writes help to w. Write errors are ignored: there is nowhere left
+// to report them.
 func usage(w io.Writer) {
+	var b strings.Builder
+	defer func() { _, _ = io.WriteString(w, b.String()) }()
+
 	n := platform.Name
-	fmt.Fprintf(w, `Usage: %[1]s <tool> [args...]
+	fmt.Fprintf(&b, `Usage: %[1]s <tool> [args...]
 
 %[2]s
 
@@ -104,19 +109,19 @@ Commands:
 `, n, platform.Description)
 	tools, err := store.List()
 	if err != nil {
-		fmt.Fprintf(w, "\nCould not list installed tools: %v\n", err)
+		fmt.Fprintf(&b, "\nCould not list installed tools: %v\n", err)
 		return
 	}
 	if len(tools) == 0 {
-		fmt.Fprintf(w, "\nNo tools installed yet. Run '%[1]s <tool>' or '%[1]s install <tool>'.\n", n)
+		fmt.Fprintf(&b, "\nNo tools installed yet. Run '%[1]s <tool>' or '%[1]s install <tool>'.\n", n)
 		return
 	}
-	fmt.Fprintln(w, "\nInstalled tools:")
+	fmt.Fprintln(&b, "\nInstalled tools:")
 	for _, t := range tools {
 		tag := t.Tag
 		if tag == "" {
 			tag = "unknown version"
 		}
-		fmt.Fprintf(w, "  %-20s %s\n", t.Name, tag)
+		fmt.Fprintf(&b, "  %-20s %s\n", t.Name, tag)
 	}
 }

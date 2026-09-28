@@ -1,0 +1,2 @@
+# asdf plugin add golangci-lint https://github.com/hypnoglow/asdf-golangci-lint
+golangci-lint 2.12.2

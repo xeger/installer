@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Installs development tools at the versions pinned in .tool-versions.
+
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+go mod download
+
+desired_lint=$(grep -E '^golangci-lint ' .tool-versions | cut -d' ' -f2)
+installed_lint=$(golangci-lint --version 2> /dev/null | cut -d' ' -f4 || true)
+if [[ "$installed_lint" != "$desired_lint" ]]; then
+  echo "Installing golangci-lint ${desired_lint} (found: ${installed_lint:-none})"
+  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh |
+    sh -s -- -b "$(go env GOPATH)/bin" "v${desired_lint}"
+fi
