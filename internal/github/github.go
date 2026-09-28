@@ -1,150 +1,107 @@
+// Package github queries and downloads GitHub releases through the GitHub
+// CLI (gh), which supplies authentication for private repositories.
 package github
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/xeger/installer/internal/platform"
 )
 
+// Release is a GitHub release and its downloadable assets.
 type Release struct {
-	TagName string  `json:"tagName"`
-	Assets  []Asset `json:"assets"`
+	Tag    string  `json:"tagName"`
+	Assets []Asset `json:"assets"`
 }
 
+// Asset is a file attached to a release.
 type Asset struct {
 	Name string `json:"name"`
-	URL  string `json:"url"`
 }
 
-// FindRepositories returns all possible repository patterns for a command name
-func FindRepositories(commandName string) []string {
-	return []string{
-		fmt.Sprintf("crossnokaye/%s", commandName),
-		fmt.Sprintf("crossnokaye/cli-%s", commandName),
-		fmt.Sprintf("crossnokaye/%s-cli", commandName),
+// Has reports whether r has an asset named name.
+func (r *Release) Has(name string) bool {
+	for _, a := range r.Assets {
+		if a.Name == name {
+			return true
+		}
 	}
+	return false
 }
 
-func IsGHCLIAvailable() error {
-	_, err := exec.LookPath("gh")
-	if err != nil {
-		return fmt.Errorf("GitHub CLI not found. Please install from https://cli.github.com/")
+// AssetName returns the conventional release asset name for tool.
+func AssetName(tool, tag, goos, goarch string) string {
+	return fmt.Sprintf("%s_%s_%s_%s.tar.gz", tool, tag, goos, goarch)
+}
+
+// Check verifies that gh is installed and signed in to github.com. Its
+// error explains how to fix the problem.
+func Check(ctx context.Context) error {
+	if _, err := exec.LookPath("gh"); err != nil {
+		return fmt.Errorf("%s downloads tools with the GitHub CLI (gh), which is not installed.\n"+
+			"Install it:\n  %s\nthen sign in:\n  gh auth login", platform.Name, installHint(runtime.GOOS))
+	}
+	if _, err := gh(ctx, "auth", "status", "--hostname", "github.com"); err != nil {
+		return errors.New("the GitHub CLI (gh) is not signed in to github.com.\nSign in:\n  gh auth login")
 	}
 	return nil
 }
 
-func GetLatestRelease(repo string) (*Release, error) {
-	if err := IsGHCLIAvailable(); err != nil {
+func installHint(goos string) string {
+	switch goos {
+	case "darwin":
+		return "brew install gh"
+	case "windows":
+		return "winget install --id GitHub.cli"
+	default:
+		return "see https://github.com/cli/cli#installation"
+	}
+}
+
+// User returns the login of the account gh is signed in as.
+func User(ctx context.Context) (string, error) {
+	out, err := gh(ctx, "api", "user", "--jq", ".login")
+	return strings.TrimSpace(string(out)), err
+}
+
+// Latest returns repo's latest release.
+func Latest(ctx context.Context, repo string) (*Release, error) {
+	out, err := gh(ctx, "release", "view", "--repo", repo, "--json", "tagName,assets")
+	if err != nil {
 		return nil, err
 	}
+	var r Release
+	if err := json.Unmarshal(out, &r); err != nil {
+		return nil, fmt.Errorf("parse %s release: %w", repo, err)
+	}
+	return &r, nil
+}
 
-	cmd := exec.Command("gh", "release", "view", "--repo", repo, "--json", "tagName,assets")
-	output, err := cmd.Output()
+// Download saves asset from repo's release tag into dir.
+func Download(ctx context.Context, repo, tag, asset, dir string) error {
+	_, err := gh(ctx, "release", "download", tag, "--repo", repo, "--pattern", asset, "--dir", dir)
+	return err
+}
+
+// gh runs the GitHub CLI and returns its stdout. Errors include gh's
+// stderr, which is where it explains what went wrong.
+func gh(ctx context.Context, args ...string) ([]byte, error) {
+	var stderr bytes.Buffer
+	cmd := exec.CommandContext(ctx, "gh", args...)
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get release info for %s: %w", repo, err)
-	}
-
-	var release Release
-	if err := json.Unmarshal(output, &release); err != nil {
-		return nil, fmt.Errorf("failed to parse release data: %w", err)
-	}
-
-	return &release, nil
-}
-
-func FindAssetForPlatform(release *Release, baseName string) (*Asset, error) {
-	expectedName := fmt.Sprintf("%s_%s_%s_%s.tar.gz", baseName, release.TagName, runtime.GOOS, runtime.GOARCH)
-
-	for _, asset := range release.Assets {
-		if asset.Name == expectedName {
-			return &asset, nil
+		if msg := strings.TrimSpace(stderr.String()); msg != "" {
+			return nil, fmt.Errorf("gh %s: %s", args[0], msg)
 		}
+		return nil, fmt.Errorf("gh %s: %w", args[0], err)
 	}
-
-	var availableAssets []string
-	for _, asset := range release.Assets {
-		if strings.HasPrefix(asset.Name, baseName+"_") && strings.HasSuffix(asset.Name, ".tar.gz") {
-			availableAssets = append(availableAssets, asset.Name)
-		}
-	}
-
-	if len(availableAssets) > 0 {
-		return nil, fmt.Errorf("no asset found for %s. Available assets: %s",
-			expectedName, strings.Join(availableAssets, ", "))
-	}
-
-	return nil, fmt.Errorf("no compatible assets found for %s", baseName)
-}
-
-func DownloadAsset(asset *Asset, destPath string, repo string, tagName string) error {
-	if err := IsGHCLIAvailable(); err != nil {
-		return err
-	}
-
-	destDir := filepath.Dir(destPath)
-	cmd := exec.Command("gh", "release", "download", tagName, "--pattern", asset.Name, "--dir", destDir, "--repo", repo)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to download asset %s: %w", asset.Name, err)
-	}
-
-	return nil
-}
-
-// GetCurrentGitHubUser returns the GitHub username of the currently logged-in user
-func GetCurrentGitHubUser() (string, error) {
-	if err := IsGHCLIAvailable(); err != nil {
-		return "", err
-	}
-
-	cmd := exec.Command("gh", "auth", "status", "--hostname", "github.com")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", nil // Not logged in or auth failed
-	}
-
-	// Parse the output to extract the username
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "Logged in to github.com account") {
-			parts := strings.Fields(line)
-			for i, part := range parts {
-				if part == "account" && i+1 < len(parts) {
-					// Remove any parentheses or other characters
-					username := strings.TrimSpace(parts[i+1])
-					username = strings.Trim(username, "()")
-					return username, nil
-				}
-			}
-		}
-	}
-
-	return "", nil // Couldn't parse username
-}
-
-// FormatRepositoryNotFoundError creates a user-friendly error message when no repository is found
-func FormatRepositoryNotFoundError(commandName string, repoPatterns []string) string {
-	var message strings.Builder
-
-	message.WriteString("No distribution channel found.\n")
-	message.WriteString("Tried the following repositories:\n")
-
-	for _, pattern := range repoPatterns {
-		message.WriteString(fmt.Sprintf("  • %s\n", pattern))
-	}
-
-	// Get current GitHub user
-	username, err := GetCurrentGitHubUser()
-	if err != nil {
-		message.WriteString("\nNote: GitHub CLI is not available. Please install it from https://cli.github.com/\n")
-	} else if username == "" {
-		message.WriteString("\nIf the command is located in a private repository, please log in with:\n")
-		message.WriteString("  gh auth login\n")
-	} else {
-		message.WriteString(fmt.Sprintf("\nIf the command is located in a private repository, make sure that you (%s) have access to it.\n", username))
-	}
-
-	return message.String()
+	return out, nil
 }

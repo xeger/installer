@@ -8,45 +8,31 @@ permissions:
   contents: write  # Required for uploading assets
 
 jobs:
+  build-archives:
+    uses: ./.github/workflows/build-archives.yml
+    with:
+      release_tag: ${{ github.event.release.tag_name }}
+
   build-darwin:
     uses: ./.github/workflows/build-darwin.yml
     with:
       release_tag: ${{ github.event.release.tag_name }}
-      release_channel: ${{ github.repository }}
 
   build-windows:
     uses: ./.github/workflows/build-windows.yml
     with:
       release_tag: ${{ github.event.release.tag_name }}
-      release_channel: ${{ github.repository }}
 
   publish:
-    needs: [build-darwin, build-windows]
+    needs: [build-archives, build-darwin, build-windows]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write  # Required for uploading release assets
-
     steps:
-      - name: Download Darwin artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          name: darwin-pkg
-          path: ./artifacts/
-
-      - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-msi
-          path: ./artifacts/
-
-      - name: List artifact contents (for debugging)
-        run: |
-          echo "Artifact contents:"
-          find ./artifacts -type f -name "*.pkg" -o -name "*.msi" | head -20
-
-      - name: Upload all artifacts to release
+          path: ./artifacts
+          merge-multiple: true
+      - name: Upload installers and archives to the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Upload all .pkg and .msi files found in artifacts directory
-          find ./artifacts -type f \( -name "*.pkg" -o -name "*.msi" \) -exec gh release upload ${{ github.event.release.tag_name }} {} --clobber --repo ${{ github.repository }} \;
+          gh release upload "${{ github.event.release.tag_name }}" ./artifacts/* --clobber --repo "${{ github.repository }}"

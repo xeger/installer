@@ -4,12 +4,7 @@ on:
   workflow_call:
     inputs:
       release_tag:
-        description: 'Release tag to upload artifacts to (empty means CI build)'
-        required: false
-        default: ''
-        type: string
-      release_channel:
-        description: 'Repository for release channel'
+        description: 'Release tag to stamp into the installers (empty means CI build)'
         required: false
         default: ''
         type: string
@@ -17,25 +12,18 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
-          go-version: '1.21'
-
+          go-version-file: go.mod
+      # WiX 6+ requires the Open Source Maintenance Fee for commercial use
+      # (v7 enforces it with a EULA check). 5.0.2 is the last MS-RL release.
       - name: Install WiX
-        run: dotnet tool install --global wix
-
-      - name: Build Windows MSI
-        run: |
-          .\scripts\build-windows.ps1 -Version "${{ inputs.release_tag || github.ref_name || 'dev' }}" -Repository "${{ inputs.release_channel }}"
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        run: dotnet tool install --global wix --version 5.0.2
+      - name: Build MSI
+        run: .\scripts\build-windows.ps1 -Version "${{ inputs.release_tag || 'dev' }}"
+      - uses: actions/upload-artifact@v4
         with:
           name: windows-msi
           path: 'dist/*.msi'

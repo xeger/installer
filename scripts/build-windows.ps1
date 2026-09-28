@@ -1,39 +1,38 @@
 #!/usr/bin/env pwsh
+# Builds Windows installers (dist/xn-x64.msi, dist/xn-arm64.msi) holding
+# static binaries. The MSI installs xn under Program Files and adds it to PATH.
 
 param(
-    [string]$Version = "dev",
-    [string]$Repository = ""
+    [string]$Version = "dev"
 )
 
-Write-Host "Building CrossnoKaye CLI for Windows (version: $Version, repository: $Repository)"
+$ErrorActionPreference = "Stop"
 
-# Clean and create build directories
+Write-Host "Building xn for Windows (version: $Version)"
+
 Remove-Item -Path "dist" -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Force -Path "dist"
+New-Item -ItemType Directory -Force -Path "dist" | Out-Null
 
-Write-Host "Building binaries..."
-
-# Build for windows/amd64
-Write-Host "Building for windows/amd64..."
+$env:CGO_ENABLED = "0"
 $env:GOOS = "windows"
-$env:GOARCH = "amd64"
-go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$Version -X github.com/crossnokaye/cli/internal/version.ReleaseChannel=$Repository" -o dist/windows-amd64/ck.exe ./cmd/ck
+$ldflags = "-X github.com/xeger/installer/internal/platform.version=$Version"
 
-# Build for windows/arm64
-Write-Host "Building for windows/arm64..."
-$env:GOOS = "windows"
-$env:GOARCH = "arm64"
-go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$Version -X github.com/crossnokaye/cli/internal/version.ReleaseChannel=$Repository" -o dist/windows-arm64/ck.exe ./cmd/ck
+foreach ($arch in "amd64", "arm64") {
+    Write-Host "Building for windows/$arch..."
+    $env:GOARCH = $arch
+    go build -trimpath -ldflags $ldflags -o "dist/windows-$arch/xn.exe" ./cmd/xn
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
 
-Write-Host "Building MSI installers..."
+# MSI versions must be numeric (major.minor.build); non-release builds get 0.0.0.
+$msiVersion = "0.0.0"
+if ($Version -match '^v?(\d+\.\d+\.\d+)$') { $msiVersion = $Matches[1] }
 
-# Build MSI for x64
-Write-Host "Building MSI for x64..."
-wix build scripts/wix/installer.wxs -d Platform=x64 -o dist/CrossnoKaye-CLI-x64.msi
-
-# Build MSI for ARM64
-Write-Host "Building MSI for ARM64..."
-wix build scripts/wix/installer.wxs -d Platform=arm64 -o dist/CrossnoKaye-CLI-arm64.msi
+foreach ($platform in "x64", "arm64") {
+    Write-Host "Building MSI for $platform (version $msiVersion)..."
+    wix build scripts/wix/installer.wxs -d Platform=$platform -d Version=$msiVersion -o "dist/xn-$platform.msi"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
 
 Write-Host "MSI build complete!"
 Get-ChildItem dist/*.msi | Format-Table Name, Length, LastWriteTime
