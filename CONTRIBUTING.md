@@ -31,7 +31,8 @@ Defaults: `~/.local/share` and `~/.local/state` on macOS and Linux, `%AppData%` 
 
 ```sh
 go test -race ./...
-go vet ./... && GOOS=windows go vet ./...
+scripts/setup    # installs golangci-lint at the version in .tool-versions
+scripts/lint     # GOOS=windows scripts/lint for Windows-only files
 go run ./cmd/xn help
 ```
 

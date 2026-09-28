@@ -133,7 +133,8 @@ type multiError interface{ Unwrap() []error }
 // explain writes err as a tree indented by nesting levels.
 func explain(b *strings.Builder, nesting int, err error) {
 	indent := strings.Repeat("  ", nesting)
-	m, ok := err.(multiError) //nolint:errorlint // inspecting this error's own shape, not its chain
+	// Inspect this error's own shape, not its chain.
+	m, ok := err.(multiError)
 	if !ok {
 		leaf(b, indent, err)
 		return

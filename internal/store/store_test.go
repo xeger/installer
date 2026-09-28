@@ -88,7 +88,7 @@ func TestList(t *testing.T) {
 			t.Fatal(err)
 		}
 		if withBinary {
-			if err := os.WriteFile(filepath.Join(dir, ExeName(name)), nil, 0o755); err != nil { //nolint:gosec // test
+			if err := os.WriteFile(filepath.Join(dir, ExeName(name)), nil, 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}

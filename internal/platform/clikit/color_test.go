@@ -14,8 +14,12 @@ func pipeWriter(t *testing.T) *os.File {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		r.Close()
-		w.Close()
+		if err := r.Close(); err != nil {
+			t.Errorf("closing pipe reader: %v", err)
+		}
+		if err := w.Close(); err != nil {
+			t.Errorf("closing pipe writer: %v", err)
+		}
 	})
 	return w
 }

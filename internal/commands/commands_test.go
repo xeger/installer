@@ -67,7 +67,7 @@ func TestEnsureRecentlyCheckedSkipsNetwork(t *testing.T) {
 		t.Fatal(err)
 	}
 	bin := filepath.Join(dir, store.ExeName("foo"))
-	if err := os.WriteFile(bin, nil, 0o755); err != nil { //nolint:gosec // test
+	if err := os.WriteFile(bin, nil, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.WriteRelease("foo", store.Release{Tag: "v1.0.0", CheckedAt: fixed.Add(-time.Hour)}); err != nil {

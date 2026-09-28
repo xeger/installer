@@ -14,7 +14,7 @@ import (
 // stdio, signals, and exit status. It returns only if the exec fails.
 func Exec(binary string, args []string) error {
 	argv := append([]string{filepath.Base(binary)}, args...)
-	if err := syscall.Exec(binary, argv, os.Environ()); err != nil { //nolint:gosec // running tools is the launcher's job
+	if err := syscall.Exec(binary, argv, os.Environ()); err != nil {
 		return fmt.Errorf("exec %s: %w", binary, err)
 	}
 	return nil

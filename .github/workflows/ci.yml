@@ -14,14 +14,28 @@ permissions:
 
 jobs:
   lint:
+    name: lint (${{ matrix.goos }})
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin, windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-      - name: Vet
-        run: go vet ./... && GOOS=windows go vet ./... && GOOS=darwin go vet ./...
+      - uses: actions/cache@v6
+        with:
+          path: ~/go/bin
+          key: gobin-${{ runner.os }}-${{ hashFiles('.tool-versions', 'scripts/setup') }}
+      - name: Setup
+        run: scripts/setup
+      # golangci-lint includes go vet (govet).
+      - name: Lint
+        env:
+          GOOS: ${{ matrix.goos }}
+        run: scripts/lint
 
   test:
     runs-on: ubuntu-latest

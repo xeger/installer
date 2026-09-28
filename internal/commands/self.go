@@ -30,7 +30,7 @@ func NotifySelfUpdate(ctx context.Context) {
 		return
 	}
 	var state selfState
-	if data, err := os.ReadFile(path); err == nil { //nolint:gosec // the launcher's own state file
+	if data, err := os.ReadFile(path); err == nil {
 		_ = json.Unmarshal(data, &state)
 	}
 	if !updates.Due(state.CheckedAt, now()) {
@@ -43,7 +43,7 @@ func NotifySelfUpdate(ctx context.Context) {
 	}
 	state.CheckedAt = now()
 	if data, err := json.Marshal(state); err == nil {
-		if os.MkdirAll(filepath.Dir(path), 0o755) == nil { //nolint:gosec // not secret
+		if os.MkdirAll(filepath.Dir(path), 0o755) == nil {
 			_ = os.WriteFile(path, data, 0o644) //nolint:gosec // not secret
 		}
 	}

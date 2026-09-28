@@ -16,17 +16,17 @@ import (
 // atomically, so a failed extraction never leaves a truncated binary.
 // Only base is extracted, so archive paths can never write outside dest.
 func ExtractFile(src, base, dest string) error {
-	f, err := os.Open(src) //nolint:gosec // src was just downloaded
+	f, err := os.Open(src)
 	if err != nil {
 		return fmt.Errorf("open archive: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }() // read-only; nothing to flush
 
 	gz, err := gzip.NewReader(f)
 	if err != nil {
 		return fmt.Errorf("read archive: %w", err)
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }() // read-only; nothing to flush
 
 	tr := tar.NewReader(gz)
 	for {
@@ -45,21 +45,23 @@ func ExtractFile(src, base, dest string) error {
 
 func writeExecutable(r io.Reader, dest string) error {
 	tmp := dest + ".tmp"
-	out, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o755) //nolint:gosec // executable
+	out, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o755)
 	if err != nil {
 		return fmt.Errorf("create %s: %w", tmp, err)
 	}
-	if _, err := io.Copy(out, r); err != nil { //nolint:gosec // archives come from trusted releases
-		out.Close()
-		os.Remove(tmp)
+	// discard removes the partial file; the original error is what matters.
+	discard := func() { _ = os.Remove(tmp) }
+	if _, err := io.Copy(out, r); err != nil {
+		_ = out.Close()
+		discard()
 		return fmt.Errorf("write %s: %w", tmp, err)
 	}
 	if err := out.Close(); err != nil {
-		os.Remove(tmp)
+		discard()
 		return fmt.Errorf("write %s: %w", tmp, err)
 	}
 	if err := os.Rename(tmp, dest); err != nil {
-		os.Remove(tmp)
+		discard()
 		return fmt.Errorf("install %s: %w", dest, err)
 	}
 	return nil
