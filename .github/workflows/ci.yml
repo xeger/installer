@@ -5,7 +5,7 @@ on:
     branches: [main]
   pull_request:
     # ready_for_review re-runs CI when a draft (which skips the builds) is
-    # marked ready, so the gate can't pass on skipped builds alone.
+    # marked ready, so gate: build can't pass on skipped builds alone.
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -22,6 +22,14 @@ jobs:
           go-version-file: go.mod
       - name: Vet
         run: go vet ./... && GOOS=windows go vet ./... && GOOS=darwin go vet ./...
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
       - name: Test
         run: go test -race ./...
 
@@ -38,13 +46,40 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
     uses: ./.github/workflows/build-windows.yml
 
-  # The single check branch protection requires. It passes only if every
-  # other job succeeded or was deliberately skipped (e.g. the builds on a
-  # draft PR), so jobs can be added or renamed without touching protection.
-  ci-passed:
-    name: CI passed
+  # Gates: one check per category (what branch protection requires). Each
+  # passes only if every job in its category succeeded or was deliberately
+  # skipped, so jobs can be added or renamed without touching protection.
+
+  gate-lint:
+    name: "gate: lint"
     if: always()
-    needs: [test, build-archives, build-darwin, build-windows]
+    needs: [lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$NEEDS" | jq -e 'all(.[]; .result == "success" or .result == "skipped")' > /dev/null
+
+  gate-test:
+    name: "gate: test"
+    if: always()
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$NEEDS" | jq -e 'all(.[]; .result == "success" or .result == "skipped")' > /dev/null
+
+  gate-build:
+    name: "gate: build"
+    if: always()
+    needs: [build-archives, build-darwin, build-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Check job results
