@@ -18,6 +18,7 @@ import (
 	"github.com/xeger/installer/internal/github"
 	"github.com/xeger/installer/internal/platform"
 	"github.com/xeger/installer/internal/store"
+	"github.com/xeger/installer/internal/ui"
 	"github.com/xeger/installer/internal/updates"
 )
 
@@ -59,14 +60,14 @@ func Ensure(ctx context.Context, arg string) (string, error) {
 		return "", err
 	}
 	if _, err := os.Stat(bin); errors.Is(err, fs.ErrNotExist) {
-		platform.UI.Info(tool, "is not installed yet; installing it")
+		ui.Default.Info(tool, "is not installed yet; installing it")
 		return bin, installFrom(ctx, tool, repo)
 	}
 	if r, err := store.ReadRelease(tool); err == nil && !updates.Due(r.CheckedAt, now()) {
 		return bin, nil
 	}
 	if err := upgrade(ctx, tool, false); err != nil {
-		platform.UI.Warn("Could not check for", tool, "updates:", firstLine(err))
+		ui.Default.Warn("Could not check for", tool, "updates:", firstLine(err))
 	}
 	return bin, nil
 }
@@ -89,7 +90,7 @@ func Upgrade(ctx context.Context, args []string) error {
 			return err
 		}
 		if len(installed) == 0 {
-			platform.UI.Info("No tools installed yet.")
+			ui.Default.Info("No tools installed yet.")
 			return nil
 		}
 		for _, t := range installed {
@@ -122,12 +123,12 @@ func upgrade(ctx context.Context, tool string, verbose bool) error {
 	}
 	if !updates.Newer(cur.Tag, rel.Tag) {
 		if verbose {
-			platform.UI.Info(tool, cur.Tag, "is up to date")
+			ui.Default.Info(tool, cur.Tag, "is up to date")
 		}
 		cur.CheckedAt = now()
 		return store.WriteRelease(tool, cur)
 	}
-	platform.UI.Info("Upgrading", tool, cur.Tag, "→", rel.Tag)
+	ui.Default.Info("Upgrading", tool, cur.Tag, "→", rel.Tag)
 	return install(ctx, tool, repo, rel)
 }
 
@@ -189,7 +190,7 @@ func install(ctx context.Context, tool, repo string, rel *github.Release) error 
 	}
 	defer os.RemoveAll(tmp)
 
-	platform.UI.Info("Downloading", tool, rel.Tag, "from", repo)
+	ui.Default.Info("Downloading", tool, rel.Tag, "from", repo)
 	if err := github.Download(ctx, repo, rel.Tag, asset, tmp); err != nil {
 		return err
 	}
@@ -208,7 +209,7 @@ func install(ctx context.Context, tool, repo string, rel *github.Release) error 
 	if err := store.WriteRelease(tool, store.Release{Tag: rel.Tag, Repository: repo, CheckedAt: now()}); err != nil {
 		return err
 	}
-	platform.UI.Success("Installed", tool, rel.Tag)
+	ui.Default.Success("Installed", tool, rel.Tag)
 	return nil
 }
 

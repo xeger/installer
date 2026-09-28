@@ -4,8 +4,9 @@
 
 | Package | Responsibility |
 |---------|----------------|
-| `internal/platform` | Product identity (`Name`, `Description`, `SelfRepo`, `Candidates`) and services (`DataDir`, `StateDir`, `Version`, `UI`) |
-| `internal/platform/clikit` | Per-user directories (XDG everywhere, XDG layout on macOS, AppData on Windows) and version stamping; `term` subpackage for terminal output |
+| `internal/platform` | Product identity (`Name`, `Description`, `SelfRepo`, `Candidates`) and services (`DataDir`, `StateDir`, `Version`, `ColorEnabled`) |
+| `internal/ui` | Status messages on stderr: leveled lines, error trees, color only when `platform.ColorEnabled` allows |
+| `internal/platform/clikit` | Per-user directories (XDG everywhere, XDG layout on macOS, AppData on Windows), version stamping, and color policy (`ColorEnabled`) |
 | `cmd/xn` | Argument dispatch and help |
 | `internal/commands` | `Ensure` (install if missing, weekly upgrade check), `Install`, `Upgrade`, self-update notice |
 | `internal/store` | Installed-tool layout, name validation, `release.json` records |
