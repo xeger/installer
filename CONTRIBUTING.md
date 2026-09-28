@@ -2,97 +2,46 @@
 
 ## Architecture
 
-**Core Components:**
-- `cmd/ck/main.go` - CLI entrypoint that handles argument parsing, built-in commands, and help requests
-- `internal/launcher/launcher.go` - Core launcher logic with subcommand discovery and execution
-- `internal/commands/install.go` - Install subcommands from GitHub releases with multiple repository patterns
-- `internal/commands/upgrade.go` - Upgrade subcommands or ck itself with version checking
-- `internal/github/github.go` - GitHub CLI wrapper for release querying and asset downloading
-- `internal/archive/extractor.go` - Streaming tar.gz extraction with in-place upgrade support
-- `internal/version/version.go` - Version tracking database using release.json files
+| Package | Responsibility |
+|---------|----------------|
+| `internal/platform` | Product identity (`Name`, `Description`, `SelfRepo`, `Candidates`) and services (`DataDir`, `StateDir`, `Version`, `UI`) |
+| `internal/platform/clikit` | Per-user directories (XDG everywhere, XDG layout on macOS, AppData on Windows) and version stamping; `term` subpackage for terminal output |
+| `cmd/xn` | Argument dispatch and help |
+| `internal/commands` | `Ensure` (install if missing, weekly upgrade check), `Install`, `Upgrade`, self-update notice |
+| `internal/store` | Installed-tool layout, name validation, `release.json` records |
+| `internal/github` | `gh` wrapper: release lookup, download, and setup guidance |
+| `internal/archive` | Extracts a tool's executable from its release tarball, atomically |
+| `internal/launcher` | Replaces `xn` with the tool (`exec` on Unix; run-and-exit-with-status on Windows) |
+| `internal/updates` | Semantic version comparison and the weekly check interval |
 
-**Key Design Patterns:**
-- **Binary Discovery**: Looks for executables at `$XDG_DATA_HOME/crossnokaye/cli/cmd/{subcommand}/{subcommand}`
-- **Argument Forwarding**: Passes all arguments after the subcommand directly to the target binary
-- **Dynamic Help**: Scans the filesystem to generate help text with available subcommands and versions
-- **XDG Compliance**: Uses `XDG_DATA_HOME` with fallback to `~/.local/share`
-- **Version Tracking**: Maintains `release.json` database files alongside binaries
-- **Repository Patterns**: Tries multiple GitHub repository naming conventions (`crossnokaye/cli-{cmd}`, `crossnokaye/{cmd}`)
-- **Self-Upgrade**: Can upgrade its own binary in-place with safety testing
+`internal/platform` is the only package that knows it is `xn`. Every other package is product-neutral, so the same launcher code can be reused under another name by supplying a different `internal/platform`. `scripts/check-sync <other-checkout>` verifies that a sibling launcher's shared code is identical (ignoring module path and the `cmd/<name>` directory). Keep product names, owners, and paths out of every other package.
 
-## Build and Development Commands
+## Files on Disk
 
-```bash
-# Build the main CLI
-go build -o ck ./cmd/ck
-
-# Run directly during development
-go run ./cmd/ck [subcommand] [args...]
-
-# Test built-in commands
-go run ./cmd/ck help
-go run ./cmd/ck install <command>
-go run ./cmd/ck upgrade <command>
-
-# Check for code issues
-go vet ./...
+```
+$XDG_DATA_HOME/xn/tools/<tool>/<tool>[.exe]
+$XDG_DATA_HOME/xn/tools/<tool>/release.json   # tag, repository, last update check
+$XDG_STATE_HOME/xn/self-update.json           # last check for a newer xn
 ```
 
-## Key Functions
+Defaults: `~/.local/share` and `~/.local/state` on macOS and Linux, `%AppData%` and `%LocalAppData%` on Windows.
 
-**launcher.Execute(subcommand, args)** - Main execution function that:
-1. Finds the binary path using `findBinary()`
-2. Creates an `exec.Command` with stdio forwarding
-3. Runs the target binary with provided arguments
+## Development
 
-**version.GetSortedCommandsWithVersions(dataHome)** - Version-aware command scanner that:
-1. Reads the commands directory structure
-2. Validates that binaries exist and are executable
-3. Returns sorted list of commands with version info from `release.json`
-4. Shows "unknown" for commands without version tracking
-
-**launcher.PrintUsage()** - Dynamic help generator that:
-1. Shows built-in commands (install, upgrade)
-2. Lists installed subcommands with versions
-3. Handles missing command directory gracefully
-
-**github.GetLatestRelease(repo)** - GitHub API wrapper that:
-1. Uses `gh release view` to get latest release info
-2. Parses JSON response for tag name and assets
-3. Returns structured release data
-
-**archive.ExtractTarGzStream(reader, opts)** - Streaming extractor that:
-1. File filtering for targeted extraction
-2. Atomic binary replacement to prevent corruption
-
-## Directory Structure Convention
-
-The launcher expects subcommands to be installed as:
-```
-$XDG_DATA_HOME/crossnokaye/cli/cmd/
-├── foo/
-│   ├── foo          # executable binary
-│   └── release.json # version tracking database
-├── bar/
-│   ├── bar          # executable binary
-│   └── release.json # version tracking database
-└── ...
+```sh
+go test -race ./...
+go vet ./... && GOOS=windows go vet ./...
+go run ./cmd/xn help
 ```
 
-## Version Tracking
+## Packaging
 
-Each command directory contains a `release.json` file:
-```json
-{
-  "foo": {
-    "tag_name": "v1.2.3",
-    "repository": "crossnokaye/cli-foo",
-    "timestamp": "1673123456"
-  }
-}
-```
+| Script | Output |
+|--------|--------|
+| `scripts/build-archives.sh <tag>` | `dist/xn_<tag>_<os>_<arch>.tar.gz` for darwin/linux/windows × amd64/arm64 |
+| `scripts/build-darwin.sh <tag>` | `dist/xn.pkg` (both architectures; postinstall picks one and copies it to `/usr/local/bin`) |
+| `scripts/build-windows.ps1 -Version <tag>` | `dist/xn-x64.msi`, `dist/xn-arm64.msi` (installs to Program Files, adds to `PATH`) |
 
-This enables:
-- Version display in help output
-- Skip upgrades when already current
-- Repository tracking for multiple naming patterns
+All binaries are static (`CGO_ENABLED=0`) and stamped with `-ldflags "-X github.com/xeger/installer/internal/platform.version=<tag>"`. Publishing a GitHub release runs `.github/workflows/release.yml`, which builds and attaches everything.
+
+WiX is pinned to 5.0.2: WiX 6 and later require the Open Source Maintenance Fee for commercial use, and v7 enforces it.

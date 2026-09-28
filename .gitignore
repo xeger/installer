@@ -1,5 +1,6 @@
 # LLMs like to build the binary to test it. Ignore this.
-ck
+/xn
+/xn.exe
 
 # Build artifacts produced by `scripts/*` and friends
 dist

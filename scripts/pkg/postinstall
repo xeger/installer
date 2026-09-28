@@ -15,8 +15,9 @@ case $ARCH in
 esac
 
 # Copy the appropriate binary
-cp "/tmp/tmp/ck-install/darwin-${BINARY_ARCH}/ck" /usr/local/bin/ck
-chmod +x /usr/local/bin/ck
+mkdir -p /usr/local/bin
+cp "/tmp/xn-install/darwin-${BINARY_ARCH}/xn" /usr/local/bin/xn
+chmod +x /usr/local/bin/xn
 
 # Clean up
-rm -rf /tmp/tmp/ck-install
+rm -rf /tmp/xn-install

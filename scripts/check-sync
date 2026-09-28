@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Verifies that this launcher's shared code matches a sibling launcher's.
+#
+# Usage: scripts/check-sync <other-checkout>
+#
+# Every Go file outside internal/platform must be identical in both
+# checkouts, except that each repository's module path and its cmd/<name>
+# directory are treated as equivalent. Exits non-zero on any difference.
+
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+  echo "usage: $0 <other-checkout>" >&2
+  exit 2
+fi
+
+here=$(git rev-parse --show-toplevel)
+there=$(cd "$1" && git rev-parse --show-toplevel)
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+
+# snapshot <checkout> <dest>: copies shared Go files into dest, with the
+# module path replaced by MODULE and cmd/<name> renamed to cmd/MAIN.
+snapshot() {
+  local root=$1 dest=$2 module cmds
+  module=$(awk '$1 == "module" { print $2; exit }' "$root/go.mod")
+  cmds=("$root"/cmd/*/)
+  if [[ ${#cmds[@]} -ne 1 ]]; then
+    echo "$root: expected exactly one directory under cmd/" >&2
+    exit 2
+  fi
+  local cmd
+  cmd=$(basename "${cmds[0]}")
+  (cd "$root" && find . -name '*.go' -not -path './internal/platform/*' -not -path './.git/*') |
+    while read -r f; do
+      local out="$dest/${f/#.\/cmd\/$cmd\//./cmd/MAIN/}"
+      mkdir -p "$(dirname "$out")"
+      sed "s#${module//./\\.}#MODULE#g" "$root/$f" > "$out"
+    done
+}
+
+snapshot "$here" "$work/a"
+snapshot "$there" "$work/b"
+
+if diff -ru "$work/a" "$work/b" | sed "s#$work/a#$here#; s#$work/b#$there#"; then
+  echo "In sync: shared code matches $there"
+else
+  echo "Out of sync with $there (see diff above)" >&2
+  exit 1
+fi

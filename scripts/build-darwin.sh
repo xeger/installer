@@ -1,47 +1,38 @@
 #!/bin/bash
+# Builds a macOS installer package (dist/xn.pkg) holding static amd64 and
+# arm64 binaries, staged in /tmp/xn-install; the postinstall script copies
+# the one matching the host to /usr/local/bin.
 
-set -e
+set -euo pipefail
 
 VERSION=${1:-dev}
-REPOSITORY=${2:-}
+LDFLAGS="-X github.com/xeger/installer/internal/platform.version=$VERSION"
 
-echo "Building CrossnoKaye CLI for Darwin (version: $VERSION, repository: $REPOSITORY)"
+echo "Building xn for Darwin (version: $VERSION)"
 
-# Clean and create build directories
 rm -rf dist pkg-build
-mkdir -p dist
-mkdir -p pkg-build/scripts
-mkdir -p pkg-build/tmp/ck-install
+mkdir -p dist pkg-build/scripts pkg-build/root/xn-install
 
-echo "Building binaries..."
-
-# Build for darwin/amd64
-echo "Building for darwin/amd64..."
-GOOS=darwin GOARCH=amd64 go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$VERSION -X github.com/crossnokaye/cli/internal/version.ReleaseChannel=$REPOSITORY" -o dist/darwin-amd64/ck ./cmd/ck
-
-# Build for darwin/arm64
-echo "Building for darwin/arm64..."
-GOOS=darwin GOARCH=arm64 go build -ldflags "-X github.com/crossnokaye/cli/internal/version.ReleaseTag=$VERSION -X github.com/crossnokaye/cli/internal/version.ReleaseChannel=$REPOSITORY" -o dist/darwin-arm64/ck ./cmd/ck
+for arch in amd64 arm64; do
+  echo "Building for darwin/$arch..."
+  CGO_ENABLED=0 GOOS=darwin GOARCH=$arch go build -trimpath -ldflags "$LDFLAGS" -o "dist/darwin-$arch/xn" ./cmd/xn
+done
 
 echo "Creating PKG installer scripts..."
-
-# Copy installer scripts
 cp scripts/pkg/postinstall pkg-build/scripts/
-cp scripts/pkg/preinstall pkg-build/scripts/
 chmod +x pkg-build/scripts/postinstall
-chmod +x pkg-build/scripts/preinstall
 
 echo "Staging binaries for PKG..."
-cp -r dist/* pkg-build/tmp/ck-install/
+cp -r dist/* pkg-build/root/xn-install/
 
 echo "Building PKG..."
 pkgbuild \
-  --root pkg-build \
+  --root pkg-build/root \
   --scripts pkg-build/scripts \
-  --identifier com.crossnokaye.ck \
-  --version "$VERSION" \
+  --identifier net.xeger.xn \
+  --version "${VERSION#v}" \
   --install-location /tmp \
-  dist/CrossnoKaye-CLI.pkg
+  dist/xn.pkg
 
 echo "PKG build complete!"
-ls -la dist/CrossnoKaye-CLI.pkg
+ls -la dist/xn.pkg
